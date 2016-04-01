@@ -39,45 +39,47 @@ max_lat <- max(all_manhattan_locations$latitude)
 input_data <- matrix(c((all_manhattan_locations$longitude - min_long) / (max_long - min_long),
                        (all_manhattan_locations$latitude - min_lat) / (max_lat - min_lat)), ncol=2)
 
-nSomX <- 5
-nSomY <- 10
-nEpoch <- 200
-radius0 <- 3
-radiusN <- 1
-radiusCooling <- "linear"
-scale0 <- 1.0
-scaleN <- 0.01
-scaleCooling <- "linear"
-kernelType <- 0
-mapType <- "planar"
-gridType <- "rectangular"
-compactSupport <- FALSE
-codebook <- NULL
-neighborhood <- "gaussian"
-
-res <- Rsomoclu.train(input_data, nEpoch, nSomX, nSomY,
-                             radius0, radiusN,
-                             radiusCooling, scale0, scaleN,
-                             scaleCooling,
-                             kernelType, mapType, gridType, compactSupport, neighborhood, codebook)
-
-# Convert To Kohonen Object for Plotting
-sommap <- Rsomoclu.kohonen(input_data, res)
-
-# Cluster Centers
-centers <- as.data.frame(sommap$codes)
-centers[,1] <- centers[,1] * (max_long - min_long) + min_long
-centers[,2] <- centers[,2] * (max_lat - min_lat) + min_lat
-
-# Plot cluster centers
-ggmap(get_map(location="Manhattan", zoom=12), extent="device") +
-  geom_point(data=centers, aes(x=V1, y=V2, color='red')) +
-  theme(legend.position="none")
-
-# Calculate Davies-Bouldin Index
-# Get cluster ID for each point
-cluster_ids <- apply(all_manhattan_locations, 1, function(point) {
-  which.min(apply(centers, 1, function(center) dist(rbind(center, point))))
-})
-
-DB_index <- index.DB(all_manhattan_locations, cluster_ids)$DB
+for (x_num in 2:15) {
+  for (y_num in 2:15) {  
+    nSomX <- x_num
+    nSomY <- y_num
+    nEpoch <- 200
+    radius0 <- 3
+    radiusN <- 1
+    radiusCooling <- "linear"
+    scale0 <- 1.0
+    scaleN <- 0.01
+    scaleCooling <- "linear"
+    kernelType <- 0
+    mapType <- "planar"
+    gridType <- "rectangular"
+    compactSupport <- FALSE
+    codebook <- NULL
+    neighborhood <- "gaussian"
+    
+    res <- Rsomoclu.train(input_data, nEpoch, nSomX, nSomY, radius0, radiusN, radiusCooling, scale0, scaleN, scaleCooling, kernelType, mapType, gridType, compactSupport, neighborhood, codebook)
+    
+    # Convert To Kohonen Object for Plotting
+    sommap <- Rsomoclu.kohonen(input_data, res)
+    
+    # Cluster Centers
+    centers <- as.data.frame(sommap$codes)
+    centers[,1] <- centers[,1] * (max_long - min_long) + min_long
+    centers[,2] <- centers[,2] * (max_lat - min_lat) + min_lat
+    
+    # Plot cluster centers
+    # ggmap(get_map(location="Manhattan", zoom=12), extent="device") +
+    #  geom_point(data=centers, aes(x=V1, y=V2, color='red')) +
+    #  theme(legend.position="none")
+    
+    # Calculate Davies-Bouldin Index
+    # Get cluster ID for each point
+    cluster_ids <- apply(all_manhattan_locations, 1, function(point) {
+      which.min(apply(centers, 1, function(center) dist(rbind(center, point))))
+    })
+    
+    DB_index <- index.DB(all_manhattan_locations, cluster_ids)$DB
+    
+    print(paste(nSomX, nSomY, DB_index, " "))
+  }
+}
